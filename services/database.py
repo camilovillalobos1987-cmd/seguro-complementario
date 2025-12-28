@@ -74,6 +74,9 @@ class DatabaseService:
                         fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         activo BOOLEAN DEFAULT 1,
                         fecha_eliminacion TIMESTAMP,
+                        enviado_aseguradora BOOLEAN DEFAULT 0,
+                        fecha_envio_aseguradora TIMESTAMP,
+                        numero_lote TEXT,
                         FOREIGN KEY (registro_id) REFERENCES registros_trabajador(id)
                     )
                 """)
@@ -153,30 +156,67 @@ class DatabaseService:
             logger.error(f"Error al obtener empleados: {e}")
             return []
     
-    def importar_empleados_excel(self, archivo_path: str) -> Tuple[int, int]:
-        """Importa empleados desde un archivo Excel."""
+    def importar_empleados_excel(self, archivo_path: str) -> Tuple[int, int, str]:
+        """
+        Importa empleados desde un archivo Excel.
+        
+        Returns:
+            Tuple[int, int, str]: (exitosos, fallidos, mensaje_error)
+        """
         try:
             df = pd.read_excel(archivo_path)
+            
+            # Verificar que hay datos
+            if df.empty:
+                return 0, 0, "El archivo está vacío"
+            
+            # Verificar columnas requeridas
+            columnas = [col.lower() for col in df.columns]
+            if 'rut' not in columnas and 'RUT' not in df.columns:
+                return 0, 0, "El archivo no tiene columna 'RUT'"
+            if 'nombre' not in columnas and 'Nombre' not in df.columns:
+                return 0, 0, "El archivo no tiene columna 'Nombre'"
+            
             exitosos = 0
             fallidos = 0
+            errores = []
             
-            for _, row in df.iterrows():
+            for idx, row in df.iterrows():
                 rut = str(row.get('RUT', row.get('rut', ''))).strip()
                 nombre = str(row.get('Nombre', row.get('nombre', ''))).strip()
-                email = str(row.get('Email', row.get('email', ''))).strip() if 'Email' in row or 'email' in row else None
+                email = None
+                if 'Email' in row:
+                    email = str(row.get('Email', '')).strip()
+                elif 'email' in row:
+                    email = str(row.get('email', '')).strip()
+                
+                # Limpiar valores nan
+                if rut == 'nan':
+                    rut = ''
+                if nombre == 'nan':
+                    nombre = ''
+                if email == 'nan':
+                    email = None
                 
                 if rut and nombre:
                     if self.agregar_empleado(rut, nombre, email):
                         exitosos += 1
                     else:
                         fallidos += 1
+                        errores.append(f"Fila {idx+2}: RUT {rut} ya existe o es inválido")
                 else:
                     fallidos += 1
+                    errores.append(f"Fila {idx+2}: RUT o Nombre vacío")
             
-            return exitosos, fallidos
+            error_msg = "; ".join(errores[:5]) if errores else ""  # Mostrar máx 5 errores
+            if len(errores) > 5:
+                error_msg += f" ... y {len(errores)-5} más"
+            
+            return exitosos, fallidos, error_msg
+            
         except Exception as e:
             logger.error(f"Error al importar empleados: {e}")
-            return 0, 0
+            return 0, 0, str(e)
     
     # ==================== GESTIÓN DE REGISTROS ====================
     
@@ -658,6 +698,7 @@ class DatabaseService:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 for reg in pendientes:
+                    # Marcar registro como enviado
                     cursor.execute("""
                         UPDATE registros_trabajador 
                         SET enviado_aseguradora = 1, 
@@ -665,6 +706,24 @@ class DatabaseService:
                             numero_lote = ?
                         WHERE id = ?
                     """, (numero_lote, reg['id']))
+                    
+                    # También marcar las cargas de este registro
+                    cursor.execute("""
+                        UPDATE cargas 
+                        SET enviado_aseguradora = 1, 
+                            fecha_envio_aseguradora = CURRENT_TIMESTAMP,
+                            numero_lote = ?
+                        WHERE registro_id = ? AND activo = 1
+                    """, (numero_lote, reg['id']))
+                
+                # Marcar cargas nuevas de registros ya enviados
+                cursor.execute("""
+                    UPDATE cargas 
+                    SET enviado_aseguradora = 1, 
+                        fecha_envio_aseguradora = CURRENT_TIMESTAMP,
+                        numero_lote = ?
+                    WHERE activo = 1 AND (enviado_aseguradora = 0 OR enviado_aseguradora IS NULL)
+                """, (numero_lote,))
                 
                 conn.commit()
             
@@ -675,11 +734,32 @@ class DatabaseService:
             logger.error(f"Error al marcar como enviados: {e}")
             return False
     
-    def reiniciar_estado_envio(self) -> bool:
-        """Reinicia el estado de envío de todos los registros (para pruebas)."""
+    def obtener_cargas_nuevas_pendientes(self) -> List[Dict]:
+        """Obtiene cargas nuevas de trabajadores ya enviados que aún no se han reportado."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT c.*, r.nombre_trabajador, r.rut_trabajador
+                    FROM cargas c
+                    JOIN registros_trabajador r ON c.registro_id = r.id
+                    WHERE r.enviado_aseguradora = 1 
+                    AND c.activo = 1 
+                    AND (c.enviado_aseguradora = 0 OR c.enviado_aseguradora IS NULL)
+                """)
+                return [dict(row) for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Error al obtener cargas pendientes: {e}")
+            return []
+    
+    def reiniciar_estado_envio(self):
+        """Reinicia el estado de envío de todos los registros y cargas (para pruebas)."""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
+                
+                # Reiniciar registros
                 cursor.execute("""
                     UPDATE registros_trabajador 
                     SET enviado_aseguradora = 0, 
@@ -687,13 +767,23 @@ class DatabaseService:
                         numero_lote = NULL
                     WHERE activo = 1
                 """)
-                filas_actualizadas = cursor.rowcount
+                filas_registros = cursor.rowcount
+                
+                # Reiniciar cargas
+                cursor.execute("""
+                    UPDATE cargas 
+                    SET enviado_aseguradora = 0, 
+                        fecha_envio_aseguradora = NULL,
+                        numero_lote = NULL
+                    WHERE activo = 1
+                """)
+                filas_cargas = cursor.rowcount
                 conn.commit()
             
-            logger.info(f"Estado de envío reiniciado: {filas_actualizadas} registros")
-            return filas_actualizadas  # Devuelve cantidad de filas actualizadas
+            total = filas_registros + filas_cargas
+            logger.info(f"Estado de envío reiniciado: {filas_registros} registros, {filas_cargas} cargas")
+            return filas_registros  # Devuelve cantidad de registros actualizados
             
         except Exception as e:
             logger.error(f"Error al reiniciar estado: {e}")
             return -1  # -1 indica error
-

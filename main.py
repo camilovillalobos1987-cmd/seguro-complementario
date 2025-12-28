@@ -1103,15 +1103,23 @@ def vista_administrador():
                     f.write(archivo.read())
                     temp_path = f.name
                 
-                exitosos, fallidos = db.importar_empleados_excel(temp_path)
+                exitosos, fallidos, error_msg = db.importar_empleados_excel(temp_path)
                 
                 if exitosos > 0:
                     st.success(f"✅ {exitosos} empleados importados correctamente")
                 if fallidos > 0:
-                    st.warning(f"⚠️ {fallidos} registros fallidos (duplicados o datos inválidos)")
+                    st.warning(f"⚠️ {fallidos} registros fallidos")
+                    if error_msg:
+                        st.caption(f"Detalles: {error_msg}")
+                if exitosos == 0 and fallidos == 0:
+                    if error_msg:
+                        st.error(f"❌ Error: {error_msg}")
+                    else:
+                        st.error("❌ No se pudo procesar el archivo")
                 
                 os.unlink(temp_path)
-                st.rerun()
+                if exitosos > 0:
+                    st.rerun()
     
     with tab4:
         st.subheader("📥 Envío a Aseguradora")
@@ -1119,17 +1127,29 @@ def vista_administrador():
         # Obtener estadísticas de envío
         stats = db.obtener_estadisticas()
         pendientes = db.obtener_registros_pendientes_envio()
+        cargas_nuevas = db.obtener_cargas_nuevas_pendientes()
         
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("📋 Total Registros", stats.get('total_registros', 0))
         with col2:
-            st.metric("⏳ Pendientes de Envío", len(pendientes))
+            st.metric("⏳ Registros Pendientes", len(pendientes))
         with col3:
+            st.metric("👶 Cargas Nuevas", len(cargas_nuevas))
+        with col4:
             enviados = stats.get('total_registros', 0) - len(pendientes)
             st.metric("✅ Ya Enviados", enviados)
         
         st.markdown("---")
+        
+        # Alertar si hay cargas nuevas de trabajadores ya enviados
+        if cargas_nuevas:
+            st.warning(f"⚠️ Hay **{len(cargas_nuevas)}** carga(s) nueva(s) de trabajadores ya enviados anteriormente.")
+            with st.expander("👁️ Ver cargas nuevas"):
+                for carga in cargas_nuevas[:10]:
+                    st.write(f"• **{carga['nombre']}** ({carga['tipo']}) - Trabajador: {carga['nombre_trabajador']}")
+                if len(cargas_nuevas) > 10:
+                    st.caption(f"... y {len(cargas_nuevas) - 10} más")
         
         if pendientes:
             st.success(f"✅ Hay **{len(pendientes)}** registro(s) nuevo(s) para enviar a la aseguradora.")
