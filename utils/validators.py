@@ -107,6 +107,31 @@ def formatear_rut(rut: str) -> str:
     return f"{rut_formateado}-{dv}"
 
 
+def normalizar_rut(rut: str) -> str:
+    """
+    Normaliza un RUT al formato sin puntos: 12345678-9
+    Este formato se usa para almacenar consistentemente en la base de datos.
+    
+    Args:
+        rut: RUT en cualquier formato
+        
+    Returns:
+        RUT normalizado sin puntos pero con guión
+    """
+    if not rut:
+        return ""
+    
+    rut_limpio = limpiar_rut(rut)
+    
+    if len(rut_limpio) < 2:
+        return rut
+    
+    rut_numero = rut_limpio[:-1]
+    dv = rut_limpio[-1]
+    
+    return f"{rut_numero}-{dv}"
+
+
 def validar_nombre(nombre: str) -> tuple[bool, str]:
     """
     Valida que el nombre contenga solo caracteres válidos.

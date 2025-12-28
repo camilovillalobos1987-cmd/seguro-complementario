@@ -10,6 +10,7 @@ import os
 
 from config import DATABASE_PATH, EXPORTS_DIR
 from utils.logger import logger
+from utils.validators import normalizar_rut
 
 
 class DatabaseService:
@@ -110,11 +111,14 @@ class DatabaseService:
     def agregar_empleado(self, rut: str, nombre: str, email: str = None) -> bool:
         """Agrega un nuevo empleado a la base de datos."""
         try:
+            # Normalizar RUT al formato sin puntos
+            rut_normalizado = normalizar_rut(rut)
+            
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute(
                     "INSERT INTO empleados (rut, nombre, email) VALUES (?, ?, ?)",
-                    (rut, nombre, email)
+                    (rut_normalizado, nombre, email)
                 )
                 conn.commit()
                 logger.info(f"Empleado agregado: {nombre}")
@@ -129,12 +133,15 @@ class DatabaseService:
     def verificar_empleado_existe(self, rut: str) -> Tuple[bool, Optional[Dict]]:
         """Verifica si un empleado existe y retorna sus datos."""
         try:
+            # Normalizar RUT para búsqueda consistente
+            rut_normalizado = normalizar_rut(rut)
+            
             with sqlite3.connect(self.db_path) as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
                 cursor.execute(
                     "SELECT * FROM empleados WHERE rut = ? AND activo = 1",
-                    (rut,)
+                    (rut_normalizado,)
                 )
                 row = cursor.fetchone()
                 if row:
