@@ -55,61 +55,208 @@ def formato_fecha_chile(fecha) -> str:
     return fecha.strftime("%d-%m-%y")
 
 
-# Estilos CSS personalizados
+# Estilos CSS corporativos
 st.markdown("""
 <style>
-    .main-header {
-        font-size: 2.5rem;
-        font-weight: bold;
-        color: #1f77b4;
-        text-align: center;
-        margin-bottom: 1rem;
+    /* Importar fuente profesional */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    /* Variables de colores corporativos */
+    :root {
+        --primary-color: #1e3a5f;
+        --secondary-color: #2e5984;
+        --accent-color: #4a90d9;
+        --success-color: #28a745;
+        --warning-color: #ffc107;
+        --danger-color: #dc3545;
+        --text-dark: #333333;
+        --text-light: #666666;
+        --bg-light: #f8f9fa;
+        --border-color: #e0e0e0;
     }
+    
+    /* Tipografía general */
+    html, body, [class*="css"] {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    
+    /* Header principal */
+    .main-header {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        text-align: center;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.5px;
+    }
+    
     .sub-header {
         text-align: center;
-        color: #666;
+        color: var(--text-light);
+        font-size: 1rem;
         margin-bottom: 2rem;
+        font-weight: 400;
     }
+    
+    /* Header con logo */
+    .corporate-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        padding: 1rem 0;
+        margin-bottom: 1rem;
+        border-bottom: 3px solid var(--primary-color);
+    }
+    
+    .corporate-header img {
+        height: 60px;
+        width: auto;
+    }
+    
+    .corporate-header h1 {
+        margin: 0;
+        color: var(--primary-color);
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+    
+    /* Cajas de estado */
     .success-box {
-        padding: 1rem;
-        background-color: #d4edda;
-        border-left: 5px solid #28a745;
-        border-radius: 5px;
+        padding: 1rem 1.5rem;
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        border-left: 4px solid var(--success-color);
+        border-radius: 8px;
         margin: 1rem 0;
     }
+    
     .error-box {
-        padding: 1rem;
-        background-color: #f8d7da;
-        border-left: 5px solid #dc3545;
-        border-radius: 5px;
+        padding: 1rem 1.5rem;
+        background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        border-left: 4px solid var(--danger-color);
+        border-radius: 8px;
         margin: 1rem 0;
     }
+    
     .info-box {
-        padding: 1rem;
-        background-color: #d1ecf1;
-        border-left: 5px solid #17a2b8;
-        border-radius: 5px;
+        padding: 1rem 1.5rem;
+        background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+        border-left: 4px solid var(--accent-color);
+        border-radius: 8px;
         margin: 1rem 0;
     }
+    
     .warning-box {
-        padding: 1rem;
-        background-color: #fff3cd;
-        border-left: 5px solid #ffc107;
-        border-radius: 5px;
+        padding: 1rem 1.5rem;
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+        border-left: 4px solid var(--warning-color);
+        border-radius: 8px;
         margin: 1rem 0;
     }
+    
+    /* Botones más profesionales */
     .stButton>button {
         width: 100%;
+        border-radius: 8px;
+        font-weight: 600;
+        padding: 0.6rem 1rem;
+        transition: all 0.2s ease;
     }
+    
+    .stButton>button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    /* Cards mejoradas */
     .card {
         background: white;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        margin: 10px 0;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border: 1px solid var(--border-color);
+        margin: 1rem 0;
+    }
+    
+    /* Sidebar más limpio */
+    .css-1d391kg {
+        background-color: var(--bg-light);
+    }
+    
+    /* Footer corporativo */
+    .corporate-footer {
+        text-align: center;
+        padding: 1.5rem;
+        margin-top: 3rem;
+        border-top: 1px solid var(--border-color);
+        color: var(--text-light);
+        font-size: 0.85rem;
+    }
+    
+    /* Formularios más limpios */
+    .stTextInput>div>div>input,
+    .stSelectbox>div>div>select {
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+    }
+    
+    /* Tabs profesionales */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 8px 8px 0 0;
+        font-weight: 500;
+    }
+    
+    /* Métricas más elegantes */
+    [data-testid="stMetricValue"] {
+        font-weight: 700;
+        color: var(--primary-color);
     }
 </style>
 """, unsafe_allow_html=True)
+
+# ==================== COMPONENTES CORPORATIVOS ====================
+
+def mostrar_header_corporativo(titulo: str, subtitulo: str = None):
+    """Muestra el header corporativo con logo."""
+    import base64
+    
+    # Cargar logo
+    try:
+        logo_path = Path("logo.jpg")
+        if logo_path.exists():
+            with open(logo_path, "rb") as f:
+                logo_base64 = base64.b64encode(f.read()).decode()
+            logo_html = f'<img src="data:image/jpeg;base64,{logo_base64}" style="height: 60px; width: auto;">'
+        else:
+            logo_html = ""
+    except:
+        logo_html = ""
+    
+    st.markdown(f"""
+    <div class="corporate-header">
+        {logo_html}
+        <div>
+            <h1 style="margin: 0; color: #1e3a5f; font-size: 1.5rem;">{titulo}</h1>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if subtitulo:
+        st.markdown(f'<p class="sub-header">{subtitulo}</p>', unsafe_allow_html=True)
+
+
+def mostrar_footer():
+    """Muestra el footer corporativo."""
+    st.markdown("""
+    <div class="corporate-footer">
+        <p>Sistema de Gestión de Seguro Complementario</p>
+        <p>© 2025 - Todos los derechos reservados</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 # ==================== INICIALIZACIÓN DE SESSION STATE ====================
@@ -781,16 +928,21 @@ def portal_autoservicio():
 
 def vista_trabajador():
     """Vista principal para el trabajador."""
-    st.markdown('<div class="main-header">📋 Registro de Seguro Complementario</div>', unsafe_allow_html=True)
+    mostrar_header_corporativo(
+        "Registro de Seguro Complementario",
+        None
+    )
     
     if st.session_state.registro_completado:
         mostrar_confirmacion_final()
+        mostrar_footer()
         return
     
     # Si ya tiene registro, mostrar portal de autoservicio
     if st.session_state.trabajador_validado and st.session_state.datos_trabajador.get('tiene_registro'):
         st.markdown('<p class="sub-header">Gestione sus cargas familiares</p>', unsafe_allow_html=True)
         portal_autoservicio()
+        mostrar_footer()
         return
     
     # Nuevo registro - flujo normal
@@ -819,7 +971,10 @@ def vista_trabajador():
 
 def vista_administrador():
     """Vista para el administrador (empleador)."""
-    st.markdown('<div class="main-header">🔐 Panel de Administración</div>', unsafe_allow_html=True)
+    mostrar_header_corporativo(
+        "Panel de Administración",
+        "Gestión de empleados y registros del seguro complementario"
+    )
     
     # Mostrar badge de notificaciones pendientes
     notificaciones = db.obtener_notificaciones_pendientes()

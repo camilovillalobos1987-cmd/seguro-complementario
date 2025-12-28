@@ -1,0 +1,36 @@
+2025-12-27 13:15:16 - seguro_complementario - INFO - Base de datos inicializada en C:\Users\ASUS\OneDrive\Desktop\Proyecto Seguro Complementario-20251227T020907Z-3-001\Proyecto Seguro Complementario\data\seguro_complementario.db
+2025-12-27 13:36:12 - seguro_complementario - INFO - Base de datos inicializada en C:\Users\ASUS\OneDrive\Desktop\Proyecto Seguro Complementario-20251227T020907Z-3-001\Proyecto Seguro Complementario\data\seguro_complementario.db
+2025-12-27 13:39:26 - seguro_complementario - WARNING - Intento de acceso con RUT no registrado: 15.610.478-7
+2025-12-27 14:46:42 - seguro_complementario - INFO - Empleado agregado: Jorge Reygadas Espinoza (RUT: 15.610.478-7)
+2025-12-27 14:51:15 - seguro_complementario - INFO - Registro creado: ID 1 para Jorge Reygadas Espinoza
+2025-12-27 14:51:15 - seguro_complementario - INFO - Carga agregada al registro 1: Cónyuge - Angelica Villalobos
+2025-12-27 14:51:15 - seguro_complementario - INFO - Carga agregada al registro 1: Hijo - Camilo Reygadas Villalobos
+2025-12-27 14:51:15 - seguro_complementario - INFO - Correo simulado guardado en data\correos_enviados\correo_156104787_20251227_145115.html
+2025-12-27 14:51:15 - seguro_complementario - INFO - Registro completado: ID 1 para Jorge Reygadas Espinoza
+2025-12-27 14:53:23 - seguro_complementario - INFO - Registros exportados a exports/registros_seguro_20251227_145321.xlsx
+2025-12-27 21:43:52 - seguro_complementario - INFO - Registros exportados a exports/registros_seguro_20251227_214352.xlsx
+2025-12-27 21:55:15 - seguro_complementario - INFO - Registros exportados a exports/registros_seguro_20251227_215515.xlsx
+2025-12-27 21:58:37 - seguro_complementario - INFO - Base de datos inicializada en C:\Users\ASUS\OneDrive\Desktop\Proyecto Seguro Complementario-20251227T020907Z-3-001\Proyecto Seguro Complementario\data\seguro_complementario.db
+2025-12-27 22:31:46 - seguro_complementario - INFO - Registros exportados a exports/registros_seguro_20251227_223145.xlsx
+2025-12-27 22:43:46 - seguro_complementario - INFO - Base de datos inicializada en C:\Users\ASUS\OneDrive\Desktop\Proyecto Seguro Complementario-20251227T020907Z-3-001\Proyecto Seguro Complementario\data\seguro_complementario.db
+2025-12-27 22:58:48 - seguro_complementario - INFO - Empleado agregado: Nelson Geraldo Huanca (RUT: 17.246.194-8)
+2025-12-27 22:59:31 - seguro_complementario - WARNING - Empleado ya existe: RUT 17.246.194-8
+2025-12-27 23:40:01 - seguro_complementario - INFO - Registro creado: ID 2 para Nelson Geraldo Huanca
+2025-12-27 23:40:01 - seguro_complementario - INFO - Carga agregada al registro 2: Cónyuge - Pamela Anderson
+2025-12-27 23:40:01 - seguro_complementario - INFO - Carga agregada al registro 2: Hijo - Alexis Geraldo Anderson
+2025-12-27 23:40:01 - seguro_complementario - INFO - Correo simulado guardado en data\correos_enviados\correo_172461948_20251227_234001.html
+2025-12-27 23:40:01 - seguro_complementario - INFO - Registro completado: ID 2 para Nelson Geraldo Huanca
+2025-12-27 23:51:52 - seguro_complementario - INFO - Base de datos inicializada en C:\Users\ASUS\OneDrive\Desktop\Proyecto Seguro Complementario-20251227T020907Z-3-001\Proyecto Seguro Complementario\data\seguro_complementario.db
+2025-12-28 00:01:34 - seguro_complementario - INFO - Empleado agregado: Vilches Belmar, Carlos Arnoldo (RUT: 10.916.955-2)
+2025-12-28 00:10:45 - seguro_complementario - INFO - Registro creado: ID 3 para Vilches Belmar, Carlos Arnoldo
+2025-12-28 00:10:45 - seguro_complementario - INFO - Carga agregada al registro 3: Cónyuge - Scarlett Johansson
+2025-12-28 00:10:45 - seguro_complementario - INFO - Carga agregada al registro 3: Hijo - Claudio Vilches Johanson
+2025-12-28 00:10:45 - seguro_complementario - INFO - Carga agregada al registro 3: Hijo - Juanita Vilches Johanson
+2025-12-28 00:10:48 - seguro_complementario - INFO - Correo enviado exitosamente a jreygadas2006@gmail.com
+2025-12-28 00:10:48 - seguro_complementario - INFO - Registro completado: ID 3 para Vilches Belmar, Carlos Arnoldo
+2025-12-28 00:21:52 - seguro_complementario - INFO - Empleado agregado: Pulgar Vilches, Carlos Eduardo (RUT: 14.255.777-0)
+2025-12-28 00:22:20 - seguro_complementario - WARNING - Empleado ya existe: RUT 14.255.777-0
+2025-12-28 00:25:05 - seguro_complementario - INFO - Registro creado: ID 4 para Pulgar Vilches, Carlos Eduardo
+2025-12-28 00:25:05 - seguro_complementario - INFO - Carga agregada al registro 4: Hijo - Ronaldo Vilches Pulgar
+2025-12-28 00:25:07 - seguro_complementario - INFO - Correo enviado exitosamente a camilovillalobos1987@gmail.com
+2025-12-28 00:25:07 - seguro_complementario - INFO - Registro completado: ID 4 para Pulgar Vilches, Carlos Eduardo
