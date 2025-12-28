@@ -709,13 +709,24 @@ def paso4_confirmar_enviar():
                 # Obtener registro completo para el email
                 registro_completo = db.obtener_registro_con_cargas(registro_id)
                 
+                # Preparar datos para email
+                datos_email = {
+                    'rut': datos['rut'],
+                    'nombre': datos['nombre'],
+                    'email': datos['email'],
+                    'banco': datos.get('banco'),
+                    'tipo_cuenta': datos.get('tipo_cuenta'),
+                    'numero_cuenta': datos.get('numero_cuenta')
+                }
+                cargas_email = registro_completo.get('cargas', []) if registro_completo else cargas
+                
                 # Intentar enviar correo
                 smtp_configurado = os.getenv('SMTP_USER') and os.getenv('SMTP_PASSWORD')
                 
                 if smtp_configurado:
-                    exito_email, msg_email = enviar_correo_confirmacion(registro_completo)
+                    exito_email = enviar_correo_confirmacion(datos_email, cargas_email)
                 else:
-                    exito_email, msg_email = simular_envio_correo(registro_completo)
+                    exito_email = simular_envio_correo(datos_email, cargas_email)
                 
                 if exito_email:
                     db.marcar_email_enviado(registro_id)
