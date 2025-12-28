@@ -687,11 +687,13 @@ class DatabaseService:
                         numero_lote = NULL
                     WHERE activo = 1
                 """)
+                filas_actualizadas = cursor.rowcount
                 conn.commit()
             
-            logger.info("Estado de envío reiniciado")
-            return True
+            logger.info(f"Estado de envío reiniciado: {filas_actualizadas} registros")
+            return filas_actualizadas  # Devuelve cantidad de filas actualizadas
             
         except Exception as e:
             logger.error(f"Error al reiniciar estado: {e}")
-            return False
+            return -1  # -1 indica error
+

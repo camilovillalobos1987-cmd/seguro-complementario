@@ -1221,11 +1221,14 @@ def vista_administrador():
         with st.expander("🔧 Herramientas de Administración"):
             st.caption("Solo para pruebas - reinicia el estado de envío")
             if st.button("🔄 Reiniciar Estado de Envío"):
-                if db.reiniciar_estado_envio():
-                    st.success("✅ Estado reiniciado. Todos los registros ahora aparecen como pendientes.")
-                    st.rerun()
-                else:
+                resultado = db.reiniciar_estado_envio()
+                if resultado == -1:
                     st.error("❌ Error al reiniciar")
+                elif resultado == 0:
+                    st.info("ℹ️ No hay registros para reiniciar. Primero debe registrar trabajadores.")
+                else:
+                    st.success(f"✅ Estado reiniciado. {resultado} registro(s) ahora aparecen como pendientes.")
+                    st.rerun()
 
 
 # ==================== MAIN ====================
