@@ -1,0 +1,16 @@
+# Docker Compose para desarrollo local
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./exports:/app/exports
+    environment:
+      - DATABASE_PATH=data/seguro_complementario.db
+      - LOG_FILE=data/app.log
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
