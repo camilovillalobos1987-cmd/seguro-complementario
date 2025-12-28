@@ -683,8 +683,8 @@ def paso4_confirmar_enviar():
             with st.spinner("Procesando registro..."):
                 # Crear registro en base de datos
                 registro_id = db.crear_registro_trabajador(
-                    rut_trabajador=datos['rut'],
-                    nombre_trabajador=datos['nombre'],
+                    rut=datos['rut'],
+                    nombre=datos['nombre'],
                     email=datos['email'],
                     banco=datos.get('banco'),
                     tipo_cuenta=datos.get('tipo_cuenta'),
