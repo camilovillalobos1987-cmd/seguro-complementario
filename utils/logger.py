@@ -4,7 +4,7 @@ Sistema de logging centralizado para la aplicación.
 import logging
 import sys
 from pathlib import Path
-from config import LOG_LEVEL, LOG_FILE_FULL_PATH
+from config import LOG_LEVEL, LOG_FILE
 
 
 def setup_logger(name: str = __name__) -> logging.Logger:
@@ -33,8 +33,9 @@ def setup_logger(name: str = __name__) -> logging.Logger:
     
     # Handler para archivo
     try:
-        LOG_FILE_FULL_PATH.parent.mkdir(exist_ok=True)
-        file_handler = logging.FileHandler(LOG_FILE_FULL_PATH, encoding='utf-8')
+        log_path = Path(LOG_FILE)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        file_handler = logging.FileHandler(log_path, encoding='utf-8')
         file_handler.setLevel(logging.DEBUG)
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
@@ -52,3 +53,4 @@ def setup_logger(name: str = __name__) -> logging.Logger:
 
 # Logger por defecto
 logger = setup_logger('seguro_complementario')
+
