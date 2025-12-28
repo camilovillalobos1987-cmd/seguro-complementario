@@ -70,6 +70,7 @@ class DatabaseService:
                         tipo TEXT NOT NULL,
                         rut TEXT NOT NULL,
                         nombre TEXT NOT NULL,
+                        sexo TEXT,
                         fecha_nacimiento DATE NOT NULL,
                         edad INTEGER NOT NULL,
                         fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -248,15 +249,15 @@ class DatabaseService:
             return None
     
     def agregar_carga_a_registro(self, registro_id: int, tipo: str, rut: str,
-                                  nombre: str, fecha_nacimiento, edad: int) -> bool:
+                                  nombre: str, sexo: str, fecha_nacimiento, edad: int) -> bool:
         """Agrega una carga familiar a un registro."""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                    INSERT INTO cargas (registro_id, tipo, rut, nombre, fecha_nacimiento, edad)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                """, (registro_id, tipo, rut, nombre, fecha_nacimiento, edad))
+                    INSERT INTO cargas (registro_id, tipo, rut, nombre, sexo, fecha_nacimiento, edad)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (registro_id, tipo, rut, nombre, sexo, fecha_nacimiento, edad))
                 conn.commit()
                 logger.info(f"Carga agregada: {nombre}")
                 return True
@@ -593,6 +594,7 @@ class DatabaseService:
                         c.tipo as 'Tipo Carga',
                         c.rut as 'RUT Carga',
                         c.nombre as 'Nombre Carga',
+                        c.sexo as 'Sexo',
                         c.fecha_nacimiento as 'Fecha Nacimiento',
                         c.edad as 'Edad'
                     FROM cargas c
@@ -669,6 +671,7 @@ class DatabaseService:
                         c.tipo as 'Tipo Carga',
                         c.rut as 'RUT Carga',
                         c.nombre as 'Nombre Carga',
+                        c.sexo as 'Sexo',
                         c.fecha_nacimiento as 'Fecha Nacimiento',
                         c.edad as 'Edad'
                     FROM cargas c

@@ -514,18 +514,21 @@ def paso3_agregar_cargas():
     if st.session_state.cargas_temporales:
         st.markdown("### ✅ Cargas Agregadas")
         for i, carga in enumerate(st.session_state.cargas_temporales):
-            col1, col2, col3, col4, col5, col6 = st.columns([1.5, 2.5, 2, 1.5, 1, 0.5])
+            col1, col2, col3, col4, col5, col6, col7 = st.columns([1.5, 2.5, 1, 2, 1.5, 1, 0.5])
             with col1:
                 st.write(f"**{carga['tipo']}**")
             with col2:
                 st.write(carga['nombre'])
             with col3:
-                st.write(carga['rut'])
+                sexo_icon = "👨" if carga.get('sexo') == "Masculino" else "👩"
+                st.write(sexo_icon)
             with col4:
-                st.write(f"Nac: {formato_fecha_chile(carga['fecha_nacimiento'])}")
+                st.write(carga['rut'])
             with col5:
-                st.write(f"{carga['edad']} años")
+                st.write(f"Nac: {formato_fecha_chile(carga['fecha_nacimiento'])}")
             with col6:
+                st.write(f"{carga['edad']} años")
+            with col7:
                 if st.button("❌", key=f"del_{i}"):
                     st.session_state.cargas_temporales.pop(i)
                     st.rerun()
@@ -554,6 +557,10 @@ def paso3_agregar_cargas():
             )
         
         with col2:
+            sexo_carga = st.selectbox(
+                "Sexo",
+                options=["Masculino", "Femenino"]
+            )
             fecha_nac = st.date_input(
                 "Fecha de nacimiento (DD/MM/AAAA)",
                 max_value=datetime.date.today(),
@@ -595,6 +602,7 @@ def paso3_agregar_cargas():
                 'tipo': tipo_carga.replace('/a', ''),
                 'rut': rut_formateado,
                 'nombre': nombre_carga.title(),
+                'sexo': sexo_carga,
                 'fecha_nacimiento': fecha_nac,
                 'edad': calcular_edad(fecha_nac)
             })
@@ -702,6 +710,7 @@ def paso4_confirmar_enviar():
                         tipo=carga['tipo'],
                         rut=carga['rut'],
                         nombre=carga['nombre'],
+                        sexo=carga.get('sexo', 'No especificado'),
                         fecha_nacimiento=carga['fecha_nacimiento'],
                         edad=carga['edad']
                     )
