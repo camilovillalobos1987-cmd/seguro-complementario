@@ -2,7 +2,7 @@
 Servicios de la aplicación.
 """
 from .database import DatabaseService
-from .email_service import enviar_correo_confirmacion, simular_envio_correo
+from .email_service import enviar_correo_confirmacion, simular_envio_correo, enviar_correo_aseguradora
 
 # Bancos chilenos
 BANCOS_CHILE = [
@@ -36,5 +36,6 @@ __all__ = [
     'BANCOS_CHILE',
     'TIPOS_CUENTA',
     'enviar_correo_confirmacion',
-    'simular_envio_correo'
+    'simular_envio_correo',
+    'enviar_correo_aseguradora'
 ]

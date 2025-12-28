@@ -24,7 +24,8 @@ from services import (
     BANCOS_CHILE,
     TIPOS_CUENTA,
     enviar_correo_confirmacion,
-    simular_envio_correo
+    simular_envio_correo,
+    enviar_correo_aseguradora
 )
 
 
@@ -1129,27 +1130,63 @@ def vista_administrador():
                 if len(pendientes) > 10:
                     st.caption(f"... y {len(pendientes) - 10} más")
             
-            if st.button("📤 Exportar y Marcar como Enviado", type="primary"):
-                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                lote = f"LOTE_{timestamp}"
-                archivo = f"exports/envio_seguro_{lote}.xlsx"
-                
-                if db.exportar_y_marcar_enviado(archivo, lote):
-                    st.success(f"✅ Archivo generado y registros marcados como enviados")
-                    st.info(f"📦 Número de lote: `{lote}`")
+            st.markdown("### ✉️ Enviar a la Aseguradora")
+            
+            email_aseguradora = st.text_input(
+                "Correo de la Aseguradora",
+                placeholder="seguros@ejemplo.cl",
+                help="Ingrese el correo donde se enviará el listado de nuevas altas"
+            )
+            
+            col_btn1, col_btn2 = st.columns(2)
+            
+            with col_btn1:
+                if st.button("📧 Enviar por Email", type="primary", disabled=not email_aseguradora):
+                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                    lote = f"LOTE_{timestamp}"
+                    archivo = f"exports/envio_seguro_{lote}.xlsx"
                     
-                    try:
-                        with open(archivo, 'rb') as f:
-                            st.download_button(
-                                label="⬇️ Descargar Excel para Aseguradora",
-                                data=f,
-                                file_name=f"envio_seguro_{lote}.xlsx",
-                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                            )
-                    except:
-                        st.warning("Descargue el archivo desde la carpeta exports/")
-                else:
-                    st.error("❌ Error al generar el archivo")
+                    if db.exportar_y_marcar_enviado(archivo, lote):
+                        # Enviar correo
+                        if enviar_correo_aseguradora(email_aseguradora, archivo, len(pendientes), lote):
+                            st.success(f"✅ ¡Enviado correctamente a **{email_aseguradora}**!")
+                            st.info(f"📦 Número de lote: `{lote}`")
+                            st.balloons()
+                        else:
+                            st.warning("⚠️ El archivo se generó pero no se pudo enviar el correo. Descárguelo manualmente.")
+                            try:
+                                with open(archivo, 'rb') as f:
+                                    st.download_button(
+                                        label="⬇️ Descargar Excel",
+                                        data=f,
+                                        file_name=f"envio_seguro_{lote}.xlsx",
+                                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                                    )
+                            except:
+                                pass
+                    else:
+                        st.error("❌ Error al generar el archivo")
+            
+            with col_btn2:
+                if st.button("📥 Solo Descargar (sin enviar)"):
+                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                    lote = f"LOTE_{timestamp}"
+                    archivo = f"exports/envio_seguro_{lote}.xlsx"
+                    
+                    if db.exportar_y_marcar_enviado(archivo, lote):
+                        st.success(f"✅ Archivo generado: `{lote}`")
+                        try:
+                            with open(archivo, 'rb') as f:
+                                st.download_button(
+                                    label="⬇️ Descargar Excel",
+                                    data=f,
+                                    file_name=f"envio_seguro_{lote}.xlsx",
+                                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                                )
+                        except:
+                            st.warning("Descargue desde la carpeta exports/")
+                    else:
+                        st.error("❌ Error al generar")
         else:
             st.info("✅ No hay registros nuevos para enviar. Todos están al día con la aseguradora.")
         

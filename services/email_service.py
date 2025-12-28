@@ -161,3 +161,109 @@ def simular_envio_correo(datos_trabajador: dict, cargas: list) -> bool:
     except Exception as e:
         logger.error(f"Error al simular correo: {e}")
         return False
+
+
+def enviar_correo_aseguradora(email_aseguradora: str, archivo_excel: str, 
+                               cantidad_registros: int, numero_lote: str) -> bool:
+    """
+    Envía correo a la aseguradora con el Excel de nuevas altas adjunto.
+    
+    Args:
+        email_aseguradora: Correo de la aseguradora
+        archivo_excel: Path al archivo Excel a adjuntar
+        cantidad_registros: Cantidad de nuevos registros
+        numero_lote: Número de lote para referencia
+        
+    Returns:
+        True si se envió correctamente
+    """
+    from email.mime.base import MIMEBase
+    from email import encoders
+    
+    if not SMTP_USER or not SMTP_PASSWORD:
+        logger.warning("Configuración SMTP incompleta, no se puede enviar a aseguradora")
+        return False
+    
+    try:
+        msg = MIMEMultipart()
+        msg['Subject'] = f"📋 Nuevas Altas Seguro Complementario - Lote {numero_lote}"
+        msg['From'] = FROM_EMAIL or SMTP_USER
+        msg['To'] = email_aseguradora
+        
+        # Cuerpo del correo
+        fecha_actual = datetime.now().strftime("%d/%m/%Y %H:%M")
+        
+        html_body = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+                .content {{ background: #f9f9f9; padding: 20px; border: 1px solid #ddd; }}
+                .info-box {{ background: #e3f2fd; border-left: 4px solid #1565c0; padding: 15px; margin: 15px 0; }}
+                .footer {{ text-align: center; padding: 15px; font-size: 12px; color: #666; background: #f0f0f0; border-radius: 0 0 8px 8px; }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>📋 Nuevas Altas - Seguro Complementario</h1>
+            </div>
+            
+            <div class="content">
+                <p>Estimados,</p>
+                
+                <p>Adjunto enviamos el listado de <strong>nuevas altas</strong> del seguro complementario para su procesamiento.</p>
+                
+                <div class="info-box">
+                    <strong>📦 Número de Lote:</strong> {numero_lote}<br>
+                    <strong>📅 Fecha de Envío:</strong> {fecha_actual}<br>
+                    <strong>👥 Cantidad de Registros:</strong> {cantidad_registros} trabajador(es)
+                </div>
+                
+                <p><strong>Archivo adjunto:</strong></p>
+                <ul>
+                    <li>Excel con datos de trabajadores y cargas familiares</li>
+                </ul>
+                
+                <p>Quedamos atentos a la confirmación de recepción y procesamiento.</p>
+                
+                <p>Saludos cordiales,<br>
+                <strong>Recursos Humanos</strong></p>
+            </div>
+            
+            <div class="footer">
+                <p>Este es un correo automático del Sistema de Gestión de Seguro Complementario</p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        msg.attach(MIMEText(html_body, 'html'))
+        
+        # Adjuntar Excel
+        with open(archivo_excel, 'rb') as attachment:
+            part = MIMEBase('application', 'octet-stream')
+            part.set_payload(attachment.read())
+        
+        encoders.encode_base64(part)
+        nombre_archivo = Path(archivo_excel).name
+        part.add_header(
+            'Content-Disposition',
+            f'attachment; filename= {nombre_archivo}'
+        )
+        msg.attach(part)
+        
+        # Enviar
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.send_message(msg)
+        
+        logger.info(f"Correo enviado a aseguradora: {email_aseguradora}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error al enviar correo a aseguradora: {e}")
+        return False
