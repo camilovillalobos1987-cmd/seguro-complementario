@@ -384,7 +384,7 @@ class DatabaseService:
             return False
     
     def obtener_estadisticas(self) -> Dict:
-        """Obtiene estadísticas para el dashboard."""
+        """Obtiene estadísticas completas para el dashboard."""
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
@@ -401,15 +401,37 @@ class DatabaseService:
                 cursor.execute("SELECT tipo, COUNT(*) FROM cargas WHERE activo = 1 GROUP BY tipo")
                 cargas_por_tipo = dict(cursor.fetchall())
                 
+                cursor.execute("SELECT sexo, COUNT(*) FROM cargas WHERE activo = 1 AND sexo IS NOT NULL GROUP BY sexo")
+                cargas_por_sexo = dict(cursor.fetchall())
+                
                 cursor.execute("SELECT COUNT(*) FROM registros_trabajador WHERE email_enviado = 1")
                 emails_enviados = cursor.fetchone()[0]
+                
+                cursor.execute("SELECT COUNT(*) FROM registros_trabajador WHERE activo = 1 AND enviado_aseguradora = 1")
+                registros_enviados_aseguradora = cursor.fetchone()[0]
+                
+                cursor.execute("SELECT COUNT(*) FROM registros_trabajador WHERE activo = 1 AND (enviado_aseguradora = 0 OR enviado_aseguradora IS NULL)")
+                registros_pendientes = cursor.fetchone()[0]
+                
+                # Contar hijos por género
+                cursor.execute("SELECT sexo, COUNT(*) FROM cargas WHERE activo = 1 AND tipo = 'Hijo' AND sexo IS NOT NULL GROUP BY sexo")
+                hijos_por_sexo = dict(cursor.fetchall())
+                
+                # Contar cónyuges por género
+                cursor.execute("SELECT sexo, COUNT(*) FROM cargas WHERE activo = 1 AND tipo = 'Cónyuge' AND sexo IS NOT NULL GROUP BY sexo")
+                conyuges_por_sexo = dict(cursor.fetchall())
                 
                 return {
                     'total_empleados': total_empleados,
                     'total_registros': total_registros,
                     'total_cargas': total_cargas,
                     'cargas_por_tipo': cargas_por_tipo,
-                    'emails_enviados': emails_enviados
+                    'cargas_por_sexo': cargas_por_sexo,
+                    'hijos_por_sexo': hijos_por_sexo,
+                    'conyuges_por_sexo': conyuges_por_sexo,
+                    'emails_enviados': emails_enviados,
+                    'registros_enviados': registros_enviados_aseguradora,
+                    'registros_pendientes': registros_pendientes
                 }
         except Exception as e:
             logger.error(f"Error al obtener estadísticas: {e}")

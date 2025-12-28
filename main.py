@@ -1131,51 +1131,158 @@ def vista_administrador():
                     st.rerun()
     
     with tab4:
-        st.subheader("📥 Envío a Aseguradora")
+        st.subheader("📊 Dashboard y Exportación")
         
-        # Obtener estadísticas de envío
+        # Obtener estadísticas completas
         stats = db.obtener_estadisticas()
         pendientes = db.obtener_registros_pendientes_envio()
         cargas_nuevas = db.obtener_cargas_nuevas_pendientes()
         
+        # ===== SECCIÓN 1: TARJETAS MÉTRICAS MODERNAS =====
+        st.markdown("""
+        <style>
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 15px;
+            color: white;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            margin-bottom: 10px;
+        }
+        .metric-card.green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        .metric-card.orange { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .metric-card.blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .metric-card h2 { margin: 0; font-size: 2.5rem; font-weight: 700; }
+        .metric-card p { margin: 5px 0 0 0; opacity: 0.9; font-size: 0.9rem; }
+        </style>
+        """, unsafe_allow_html=True)
+        
         col1, col2, col3, col4 = st.columns(4)
+        
         with col1:
-            st.metric("📋 Total Registros", stats.get('total_registros', 0))
+            st.markdown(f"""
+            <div class="metric-card">
+                <h2>{stats.get('total_empleados', 0)}</h2>
+                <p>👥 Empleados</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
         with col2:
-            st.metric("⏳ Registros Pendientes", len(pendientes))
+            st.markdown(f"""
+            <div class="metric-card green">
+                <h2>{stats.get('total_registros', 0)}</h2>
+                <p>📋 Registros</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
         with col3:
-            st.metric("👶 Cargas Nuevas", len(cargas_nuevas))
+            st.markdown(f"""
+            <div class="metric-card orange">
+                <h2>{stats.get('total_cargas', 0)}</h2>
+                <p>👨‍👩‍👧‍👦 Cargas Familiares</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
         with col4:
-            enviados = stats.get('total_registros', 0) - len(pendientes)
-            st.metric("✅ Ya Enviados", enviados)
+            pct_enviado = 0
+            if stats.get('total_registros', 0) > 0:
+                pct_enviado = int((stats.get('registros_enviados', 0) / stats.get('total_registros', 1)) * 100)
+            st.markdown(f"""
+            <div class="metric-card blue">
+                <h2>{pct_enviado}%</h2>
+                <p>✅ Enviados a Aseguradora</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # ===== SECCIÓN 2: GRÁFICOS =====
+        col_chart1, col_chart2 = st.columns(2)
+        
+        with col_chart1:
+            st.markdown("### 📊 Distribución de Cargas")
+            cargas_tipo = stats.get('cargas_por_tipo', {})
+            if cargas_tipo:
+                import plotly.express as px
+                import pandas as pd
+                
+                df_tipos = pd.DataFrame({
+                    'Tipo': list(cargas_tipo.keys()),
+                    'Cantidad': list(cargas_tipo.values())
+                })
+                
+                fig = px.pie(df_tipos, values='Cantidad', names='Tipo', 
+                            color_discrete_sequence=['#667eea', '#764ba2', '#f5576c', '#38ef7d'],
+                            hole=0.4)
+                fig.update_layout(
+                    showlegend=True,
+                    legend=dict(orientation="h", yanchor="bottom", y=-0.2),
+                    margin=dict(t=20, b=20, l=20, r=20),
+                    height=300
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Sin datos de cargas")
+        
+        with col_chart2:
+            st.markdown("### 👨‍👧 Hijos por Género")
+            hijos_sexo = stats.get('hijos_por_sexo', {})
+            if hijos_sexo:
+                import plotly.express as px
+                import pandas as pd
+                
+                df_hijos = pd.DataFrame({
+                    'Sexo': list(hijos_sexo.keys()),
+                    'Cantidad': list(hijos_sexo.values())
+                })
+                
+                colors = {'Masculino': '#4facfe', 'Femenino': '#f093fb'}
+                fig = px.bar(df_hijos, x='Sexo', y='Cantidad', 
+                            color='Sexo',
+                            color_discrete_map=colors)
+                fig.update_layout(
+                    showlegend=False,
+                    margin=dict(t=20, b=20, l=20, r=20),
+                    height=300
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Sin datos de hijos")
         
         st.markdown("---")
         
-        # Alertar si hay cargas nuevas de trabajadores ya enviados
+        # ===== SECCIÓN 3: ESTADO DE ENVÍO =====
+        st.markdown("### 📤 Estado de Envío a Aseguradora")
+        
+        col_status1, col_status2, col_status3 = st.columns(3)
+        
+        with col_status1:
+            st.metric("⏳ Pendientes", len(pendientes), delta=None)
+        with col_status2:
+            st.metric("👶 Cargas Nuevas", len(cargas_nuevas), delta=None)
+        with col_status3:
+            st.metric("✅ Enviados", stats.get('registros_enviados', 0), delta=None)
+        
+        # Alertas
         if cargas_nuevas:
-            st.warning(f"⚠️ Hay **{len(cargas_nuevas)}** carga(s) nueva(s) de trabajadores ya enviados anteriormente.")
-            with st.expander("👁️ Ver cargas nuevas"):
-                for carga in cargas_nuevas[:10]:
-                    st.write(f"• **{carga['nombre']}** ({carga['tipo']}) - Trabajador: {carga['nombre_trabajador']}")
-                if len(cargas_nuevas) > 10:
-                    st.caption(f"... y {len(cargas_nuevas) - 10} más")
+            st.warning(f"⚠️ Hay **{len(cargas_nuevas)}** carga(s) nueva(s) de trabajadores ya enviados.")
         
         if pendientes:
-            st.success(f"✅ Hay **{len(pendientes)}** registro(s) nuevo(s) para enviar a la aseguradora.")
+            st.success(f"✅ Hay **{len(pendientes)}** registro(s) listo(s) para enviar.")
             
-            # Mostrar vista previa
             with st.expander("👁️ Ver registros pendientes"):
-                for reg in pendientes[:10]:  # Mostrar máximo 10
+                for reg in pendientes[:10]:
                     st.write(f"• **{reg['nombre_trabajador']}** - RUT: {reg['rut_trabajador']}")
                 if len(pendientes) > 10:
                     st.caption(f"... y {len(pendientes) - 10} más")
             
-            st.markdown("### ✉️ Enviar a la Aseguradora")
+            st.markdown("#### ✉️ Enviar a la Aseguradora")
             
             email_aseguradora = st.text_input(
                 "Correo de la Aseguradora",
                 placeholder="seguros@ejemplo.cl",
-                help="Ingrese el correo donde se enviará el listado de nuevas altas"
+                help="Ingrese el correo donde se enviará el listado"
             )
             
             col_btn1, col_btn2 = st.columns(2)
@@ -1186,88 +1293,49 @@ def vista_administrador():
                     lote = f"LOTE_{timestamp}"
                     archivo = f"exports/envio_seguro_{lote}.xlsx"
                     
-                    # Primero exportar SIN marcar
                     if db.solo_exportar_pendientes(archivo):
-                        # Enviar correo
                         if enviar_correo_aseguradora(email_aseguradora, archivo, len(pendientes), lote):
-                            # Solo marcar como enviado si el email fue exitoso
                             db.marcar_registros_enviados(lote)
-                            st.success(f"✅ ¡Enviado correctamente a **{email_aseguradora}**!")
-                            st.info(f"📦 Número de lote: `{lote}`")
+                            st.success(f"✅ ¡Enviado a **{email_aseguradora}**!")
                             st.balloons()
                         else:
-                            st.warning("⚠️ El archivo se generó pero no se pudo enviar el correo. Los registros NO fueron marcados como enviados.")
-                            try:
-                                with open(archivo, 'rb') as f:
-                                    st.download_button(
-                                        label="⬇️ Descargar Excel",
-                                        data=f,
-                                        file_name=f"envio_seguro_{lote}.xlsx",
-                                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                                    )
-                            except:
-                                pass
+                            st.warning("⚠️ No se pudo enviar el correo.")
                     else:
-                        st.error("❌ Error al generar el archivo")
+                        st.error("❌ Error al generar archivo")
             
             with col_btn2:
-                if st.button("📥 Solo Descargar (sin marcar)"):
+                if st.button("📥 Solo Descargar"):
                     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
                     archivo = f"exports/descarga_{timestamp}.xlsx"
                     
-                    # Exportar SIN marcar como enviado
                     if db.solo_exportar_pendientes(archivo):
-                        st.success("✅ Archivo generado (registros NO marcados como enviados)")
-                        try:
-                            with open(archivo, 'rb') as f:
-                                st.download_button(
-                                    label="⬇️ Descargar Excel",
-                                    data=f,
-                                    file_name=f"nuevas_altas_{timestamp}.xlsx",
-                                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                                )
-                        except:
-                            st.warning("Descargue desde la carpeta exports/")
-                    else:
-                        st.error("❌ Error al generar")
+                        st.success("✅ Archivo generado")
+                        with open(archivo, 'rb') as f:
+                            st.download_button("⬇️ Descargar", f, file_name=f"nuevas_altas_{timestamp}.xlsx")
         else:
-            st.info("✅ No hay registros nuevos para enviar. Todos están al día con la aseguradora.")
+            st.info("✅ Todo está al día. No hay registros pendientes.")
         
         st.markdown("---")
         
-        # Opción de reporte completo
-        with st.expander("📊 Exportar TODO (incluyendo ya enviados)"):
-            st.warning("⚠️ Este reporte incluye TODOS los registros, incluso los ya enviados anteriormente.")
-            if st.button("📊 Generar Reporte Completo"):
+        # ===== SECCIÓN 4: HERRAMIENTAS =====
+        with st.expander("📊 Exportar Reporte Completo"):
+            if st.button("📊 Generar Reporte de TODO"):
                 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
                 archivo = f"exports/reporte_completo_{timestamp}.xlsx"
-                
                 if db.exportar_registros_excel(archivo):
-                    st.success(f"✅ Archivo generado")
-                    try:
-                        with open(archivo, 'rb') as f:
-                            st.download_button(
-                                label="⬇️ Descargar Excel Completo",
-                                data=f,
-                                file_name=f"reporte_completo_{timestamp}.xlsx",
-                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                            )
-                    except:
-                        pass
-                else:
-                    st.error("❌ Error al generar el archivo")
+                    st.success("✅ Generado")
+                    with open(archivo, 'rb') as f:
+                        st.download_button("⬇️ Descargar Completo", f, file_name=f"reporte_{timestamp}.xlsx")
         
-        # Opción para reiniciar estado (solo para pruebas)
-        with st.expander("🔧 Herramientas de Administración"):
-            st.caption("Solo para pruebas - reinicia el estado de envío")
-            if st.button("🔄 Reiniciar Estado de Envío"):
+        with st.expander("🔧 Herramientas Admin"):
+            if st.button("🔄 Reiniciar Estado"):
                 resultado = db.reiniciar_estado_envio()
                 if resultado == -1:
                     st.error("❌ Error al reiniciar")
                 elif resultado == 0:
-                    st.info("ℹ️ No hay registros para reiniciar. Primero debe registrar trabajadores.")
+                    st.info("ℹ️ No hay registros para reiniciar")
                 else:
-                    st.success(f"✅ Estado reiniciado. {resultado} registro(s) ahora aparecen como pendientes.")
+                    st.success(f"✅ {resultado} registro(s) reiniciado(s)")
                     st.rerun()
 
 
