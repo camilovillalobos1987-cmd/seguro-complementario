@@ -585,3 +585,113 @@ class DatabaseService:
         except Exception as e:
             logger.error(f"Error al exportar y marcar enviado: {e}")
             return False
+    
+    def solo_exportar_pendientes(self, archivo_salida: str) -> bool:
+        """Exporta registros pendientes SIN marcarlos como enviados (solo descarga)."""
+        try:
+            pendientes = self.obtener_registros_pendientes_envio()
+            
+            if not pendientes:
+                return False
+            
+            Path(archivo_salida).parent.mkdir(parents=True, exist_ok=True)
+            
+            ids_pendientes = [p['id'] for p in pendientes]
+            
+            with sqlite3.connect(self.db_path) as conn:
+                placeholders = ','.join('?' * len(ids_pendientes))
+                
+                df_registros = pd.read_sql_query(f"""
+                    SELECT 
+                        rut_trabajador as 'RUT',
+                        nombre_trabajador as 'Nombre',
+                        email as 'Email',
+                        banco as 'Banco',
+                        tipo_cuenta as 'Tipo Cuenta',
+                        numero_cuenta as 'Número Cuenta',
+                        fecha_registro as 'Fecha Registro'
+                    FROM registros_trabajador
+                    WHERE id IN ({placeholders}) AND activo = 1
+                    ORDER BY fecha_registro
+                """, conn, params=ids_pendientes)
+                
+                df_cargas = pd.read_sql_query(f"""
+                    SELECT 
+                        r.rut_trabajador as 'RUT Trabajador',
+                        r.nombre_trabajador as 'Nombre Trabajador',
+                        c.tipo as 'Tipo Carga',
+                        c.rut as 'RUT Carga',
+                        c.nombre as 'Nombre Carga',
+                        c.fecha_nacimiento as 'Fecha Nacimiento',
+                        c.edad as 'Edad'
+                    FROM cargas c
+                    JOIN registros_trabajador r ON c.registro_id = r.id
+                    WHERE r.id IN ({placeholders}) AND c.activo = 1 AND r.activo = 1
+                    ORDER BY r.nombre_trabajador, c.tipo
+                """, conn, params=ids_pendientes)
+                
+                if 'Fecha Registro' in df_registros.columns:
+                    df_registros['Fecha Registro'] = pd.to_datetime(df_registros['Fecha Registro']).dt.strftime('%d-%m-%y')
+                
+                if 'Fecha Nacimiento' in df_cargas.columns:
+                    df_cargas['Fecha Nacimiento'] = pd.to_datetime(df_cargas['Fecha Nacimiento']).dt.strftime('%d-%m-%y')
+                
+                with pd.ExcelWriter(archivo_salida, engine='openpyxl') as writer:
+                    df_registros.to_excel(writer, sheet_name='Trabajadores', index=False)
+                    df_cargas.to_excel(writer, sheet_name='Cargas Familiares', index=False)
+            
+            logger.info(f"Exportados {len(pendientes)} registros (sin marcar)")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error al exportar: {e}")
+            return False
+    
+    def marcar_registros_enviados(self, numero_lote: str) -> bool:
+        """Marca los registros pendientes como enviados (después de enviar email)."""
+        try:
+            pendientes = self.obtener_registros_pendientes_envio()
+            
+            if not pendientes:
+                return False
+            
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                for reg in pendientes:
+                    cursor.execute("""
+                        UPDATE registros_trabajador 
+                        SET enviado_aseguradora = 1, 
+                            fecha_envio_aseguradora = CURRENT_TIMESTAMP,
+                            numero_lote = ?
+                        WHERE id = ?
+                    """, (numero_lote, reg['id']))
+                
+                conn.commit()
+            
+            logger.info(f"Marcados {len(pendientes)} registros como enviados (lote {numero_lote})")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error al marcar como enviados: {e}")
+            return False
+    
+    def reiniciar_estado_envio(self) -> bool:
+        """Reinicia el estado de envío de todos los registros (para pruebas)."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    UPDATE registros_trabajador 
+                    SET enviado_aseguradora = 0, 
+                        fecha_envio_aseguradora = NULL,
+                        numero_lote = NULL
+                    WHERE activo = 1
+                """)
+                conn.commit()
+            
+            logger.info("Estado de envío reiniciado")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error al reiniciar estado: {e}")
+            return False

@@ -1146,14 +1146,17 @@ def vista_administrador():
                     lote = f"LOTE_{timestamp}"
                     archivo = f"exports/envio_seguro_{lote}.xlsx"
                     
-                    if db.exportar_y_marcar_enviado(archivo, lote):
+                    # Primero exportar SIN marcar
+                    if db.solo_exportar_pendientes(archivo):
                         # Enviar correo
                         if enviar_correo_aseguradora(email_aseguradora, archivo, len(pendientes), lote):
+                            # Solo marcar como enviado si el email fue exitoso
+                            db.marcar_registros_enviados(lote)
                             st.success(f"✅ ¡Enviado correctamente a **{email_aseguradora}**!")
                             st.info(f"📦 Número de lote: `{lote}`")
                             st.balloons()
                         else:
-                            st.warning("⚠️ El archivo se generó pero no se pudo enviar el correo. Descárguelo manualmente.")
+                            st.warning("⚠️ El archivo se generó pero no se pudo enviar el correo. Los registros NO fueron marcados como enviados.")
                             try:
                                 with open(archivo, 'rb') as f:
                                     st.download_button(
@@ -1168,19 +1171,19 @@ def vista_administrador():
                         st.error("❌ Error al generar el archivo")
             
             with col_btn2:
-                if st.button("📥 Solo Descargar (sin enviar)"):
+                if st.button("📥 Solo Descargar (sin marcar)"):
                     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                    lote = f"LOTE_{timestamp}"
-                    archivo = f"exports/envio_seguro_{lote}.xlsx"
+                    archivo = f"exports/descarga_{timestamp}.xlsx"
                     
-                    if db.exportar_y_marcar_enviado(archivo, lote):
-                        st.success(f"✅ Archivo generado: `{lote}`")
+                    # Exportar SIN marcar como enviado
+                    if db.solo_exportar_pendientes(archivo):
+                        st.success("✅ Archivo generado (registros NO marcados como enviados)")
                         try:
                             with open(archivo, 'rb') as f:
                                 st.download_button(
                                     label="⬇️ Descargar Excel",
                                     data=f,
-                                    file_name=f"envio_seguro_{lote}.xlsx",
+                                    file_name=f"nuevas_altas_{timestamp}.xlsx",
                                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                                 )
                         except:
@@ -1200,8 +1203,7 @@ def vista_administrador():
                 archivo = f"exports/reporte_completo_{timestamp}.xlsx"
                 
                 if db.exportar_registros_excel(archivo):
-                    st.success(f"✅ Archivo generado: `{archivo}`")
-                    
+                    st.success(f"✅ Archivo generado")
                     try:
                         with open(archivo, 'rb') as f:
                             st.download_button(
@@ -1214,6 +1216,16 @@ def vista_administrador():
                         pass
                 else:
                     st.error("❌ Error al generar el archivo")
+        
+        # Opción para reiniciar estado (solo para pruebas)
+        with st.expander("🔧 Herramientas de Administración"):
+            st.caption("Solo para pruebas - reinicia el estado de envío")
+            if st.button("🔄 Reiniciar Estado de Envío"):
+                if db.reiniciar_estado_envio():
+                    st.success("✅ Estado reiniciado. Todos los registros ahora aparecen como pendientes.")
+                    st.rerun()
+                else:
+                    st.error("❌ Error al reiniciar")
 
 
 # ==================== MAIN ====================
