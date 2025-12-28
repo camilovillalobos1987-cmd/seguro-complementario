@@ -34,7 +34,7 @@ st.set_page_config(
     page_title=APP_TITLE,
     page_icon="📋",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # Inicializar servicio de base de datos
@@ -1343,14 +1343,70 @@ def vista_administrador():
 # ==================== MAIN ====================
 
 def main():
-    """Función principal de la aplicación."""
+    """Función principal de la aplicación - Layout de página única."""
     init_session_state()
-    sidebar_menu()
     
-    if st.session_state.modo_admin:
+    # Ya no usamos sidebar, todo en la página principal
+    if 'admin_autenticado' not in st.session_state:
+        st.session_state.admin_autenticado = False
+    if 'modo_admin' not in st.session_state:
+        st.session_state.modo_admin = False
+    
+    # Header con selector de modo
+    col_logo, col_titulo, col_modo = st.columns([1, 4, 2])
+    
+    with col_logo:
+        st.markdown("# 🏢")
+    
+    with col_titulo:
+        st.markdown("### Seguro Complementario de Salud")
+        st.caption("Sistema de Gestión de Cargas Familiares")
+    
+    with col_modo:
+        # Selector de modo en el header
+        modo_seleccionado = st.selectbox(
+            "Modo:",
+            ["👤 Trabajador", "🔐 Administrador"],
+            index=1 if st.session_state.modo_admin else 0,
+            key="modo_principal",
+            label_visibility="collapsed"
+        )
+        
+        if modo_seleccionado == "🔐 Administrador":
+            if not st.session_state.admin_autenticado:
+                with st.popover("🔐 Login Admin"):
+                    password = st.text_input("Contraseña:", type="password", key="pwd_main")
+                    if st.button("Ingresar", use_container_width=True):
+                        if password == ADMIN_PASSWORD:
+                            st.session_state.admin_autenticado = True
+                            st.session_state.modo_admin = True
+                            st.rerun()
+                        else:
+                            st.error("❌ Incorrecta")
+            else:
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    st.success("✅ Admin")
+                with col_b:
+                    if st.button("Salir"):
+                        st.session_state.admin_autenticado = False
+                        st.session_state.modo_admin = False
+                        st.rerun()
+        else:
+            st.session_state.modo_admin = False
+            st.session_state.admin_autenticado = False
+    
+    st.markdown("---")
+    
+    # Mostrar vista según modo
+    if st.session_state.modo_admin and st.session_state.admin_autenticado:
         vista_administrador()
     else:
         vista_trabajador()
+    
+    # Footer
+    st.markdown("---")
+    st.caption("© 2025-2026 | Sistema de Gestión de Seguro Complementario")
 
 
 if __name__ == "__main__":
