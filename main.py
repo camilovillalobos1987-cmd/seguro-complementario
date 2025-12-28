@@ -221,40 +221,35 @@ st.markdown("""
 # ==================== COMPONENTES CORPORATIVOS ====================
 
 def mostrar_header_corporativo(titulo: str, subtitulo: str = None):
-    """Muestra el header corporativo con logo."""
-    import base64
-    
-    # Cargar logo
-    try:
-        logo_path = Path("logo.jpg")
-        if logo_path.exists():
-            with open(logo_path, "rb") as f:
-                logo_base64 = base64.b64encode(f.read()).decode()
-            logo_html = f'<img src="data:image/jpeg;base64,{logo_base64}" style="height: 60px; width: auto;">'
-        else:
-            logo_html = ""
-    except:
-        logo_html = ""
-    
+    """Muestra el header corporativo simple y profesional."""
     st.markdown(f"""
-    <div class="corporate-header">
-        {logo_html}
-        <div>
-            <h1 style="margin: 0; color: #1e3a5f; font-size: 1.5rem;">{titulo}</h1>
-        </div>
+    <div style="
+        background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%);
+        color: white;
+        padding: 1.5rem 2rem;
+        border-radius: 10px;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    ">
+        <h1 style="margin: 0; font-size: 1.8rem; font-weight: 700;">📋 {titulo}</h1>
+        {"<p style='margin: 0.5rem 0 0 0; opacity: 0.9; font-size: 1rem;'>" + subtitulo + "</p>" if subtitulo else ""}
     </div>
     """, unsafe_allow_html=True)
-    
-    if subtitulo:
-        st.markdown(f'<p class="sub-header">{subtitulo}</p>', unsafe_allow_html=True)
 
 
 def mostrar_footer():
     """Muestra el footer corporativo."""
     st.markdown("""
-    <div class="corporate-footer">
-        <p>Sistema de Gestión de Seguro Complementario</p>
-        <p>© 2025 - Todos los derechos reservados</p>
+    <div style="
+        text-align: center;
+        padding: 1.5rem;
+        margin-top: 3rem;
+        border-top: 2px solid #e0e0e0;
+        color: #666;
+        font-size: 0.85rem;
+    ">
+        <p style="margin: 0;">Sistema de Gestión de Seguro Complementario</p>
+        <p style="margin: 0.3rem 0 0 0;">© 2025 - Todos los derechos reservados</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1107,31 +1102,81 @@ def vista_administrador():
                 st.rerun()
     
     with tab4:
-        st.subheader("📥 Exportar Datos para el Seguro")
+        st.subheader("📥 Envío a Aseguradora")
         
-        st.info("""
-        Exporte todos los registros en formato Excel para enviar a la compañía de seguros.
-        El archivo incluye dos hojas:
-        - **Trabajadores:** Datos de contacto y bancarios
-        - **Cargas Familiares:** Todas las cargas registradas
-        """)
+        # Obtener estadísticas de envío
+        stats = db.obtener_estadisticas()
+        pendientes = db.obtener_registros_pendientes_envio()
         
-        if st.button("📊 Generar Reporte Excel", type="primary"):
-            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            archivo = f"exports/registros_seguro_{timestamp}.xlsx"
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("📋 Total Registros", stats.get('total_registros', 0))
+        with col2:
+            st.metric("⏳ Pendientes de Envío", len(pendientes))
+        with col3:
+            enviados = stats.get('total_registros', 0) - len(pendientes)
+            st.metric("✅ Ya Enviados", enviados)
+        
+        st.markdown("---")
+        
+        if pendientes:
+            st.success(f"✅ Hay **{len(pendientes)}** registro(s) nuevo(s) para enviar a la aseguradora.")
             
-            if db.exportar_registros_excel(archivo):
-                st.success(f"✅ Archivo generado: `{archivo}`")
+            # Mostrar vista previa
+            with st.expander("👁️ Ver registros pendientes"):
+                for reg in pendientes[:10]:  # Mostrar máximo 10
+                    st.write(f"• **{reg['nombre_trabajador']}** - RUT: {reg['rut_trabajador']}")
+                if len(pendientes) > 10:
+                    st.caption(f"... y {len(pendientes) - 10} más")
+            
+            if st.button("📤 Exportar y Marcar como Enviado", type="primary"):
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                lote = f"LOTE_{timestamp}"
+                archivo = f"exports/envio_seguro_{lote}.xlsx"
                 
-                with open(archivo, 'rb') as f:
-                    st.download_button(
-                        label="⬇️ Descargar Excel",
-                        data=f,
-                        file_name=f"registros_seguro_{timestamp}.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    )
-            else:
-                st.error("❌ Error al generar el archivo")
+                if db.exportar_y_marcar_enviado(archivo, lote):
+                    st.success(f"✅ Archivo generado y registros marcados como enviados")
+                    st.info(f"📦 Número de lote: `{lote}`")
+                    
+                    try:
+                        with open(archivo, 'rb') as f:
+                            st.download_button(
+                                label="⬇️ Descargar Excel para Aseguradora",
+                                data=f,
+                                file_name=f"envio_seguro_{lote}.xlsx",
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            )
+                    except:
+                        st.warning("Descargue el archivo desde la carpeta exports/")
+                else:
+                    st.error("❌ Error al generar el archivo")
+        else:
+            st.info("✅ No hay registros nuevos para enviar. Todos están al día con la aseguradora.")
+        
+        st.markdown("---")
+        
+        # Opción de reporte completo
+        with st.expander("📊 Exportar TODO (incluyendo ya enviados)"):
+            st.warning("⚠️ Este reporte incluye TODOS los registros, incluso los ya enviados anteriormente.")
+            if st.button("📊 Generar Reporte Completo"):
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                archivo = f"exports/reporte_completo_{timestamp}.xlsx"
+                
+                if db.exportar_registros_excel(archivo):
+                    st.success(f"✅ Archivo generado: `{archivo}`")
+                    
+                    try:
+                        with open(archivo, 'rb') as f:
+                            st.download_button(
+                                label="⬇️ Descargar Excel Completo",
+                                data=f,
+                                file_name=f"reporte_completo_{timestamp}.xlsx",
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            )
+                    except:
+                        pass
+                else:
+                    st.error("❌ Error al generar el archivo")
 
 
 # ==================== MAIN ====================

@@ -490,3 +490,98 @@ class DatabaseService:
                 return True
         except:
             return False
+    
+    # ==================== CONTROL DE ENVÍO A ASEGURADORA ====================
+    
+    def obtener_registros_pendientes_envio(self) -> List[Dict]:
+        """Obtiene registros que aún no han sido enviados a la aseguradora."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT * FROM registros_trabajador 
+                    WHERE activo = 1 AND (enviado_aseguradora = 0 OR enviado_aseguradora IS NULL)
+                    ORDER BY fecha_registro
+                """)
+                return [dict(row) for row in cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Error al obtener registros pendientes: {e}")
+            return []
+    
+    def exportar_y_marcar_enviado(self, archivo_salida: str, numero_lote: str) -> bool:
+        """Exporta solo registros pendientes y los marca como enviados."""
+        try:
+            pendientes = self.obtener_registros_pendientes_envio()
+            
+            if not pendientes:
+                return False
+            
+            Path(archivo_salida).parent.mkdir(parents=True, exist_ok=True)
+            
+            ids_pendientes = [p['id'] for p in pendientes]
+            
+            with sqlite3.connect(self.db_path) as conn:
+                # Obtener datos para exportar
+                placeholders = ','.join('?' * len(ids_pendientes))
+                
+                df_registros = pd.read_sql_query(f"""
+                    SELECT 
+                        rut_trabajador as 'RUT',
+                        nombre_trabajador as 'Nombre',
+                        email as 'Email',
+                        banco as 'Banco',
+                        tipo_cuenta as 'Tipo Cuenta',
+                        numero_cuenta as 'Número Cuenta',
+                        fecha_registro as 'Fecha Registro'
+                    FROM registros_trabajador
+                    WHERE id IN ({placeholders}) AND activo = 1
+                    ORDER BY fecha_registro
+                """, conn, params=ids_pendientes)
+                
+                df_cargas = pd.read_sql_query(f"""
+                    SELECT 
+                        r.rut_trabajador as 'RUT Trabajador',
+                        r.nombre_trabajador as 'Nombre Trabajador',
+                        c.tipo as 'Tipo Carga',
+                        c.rut as 'RUT Carga',
+                        c.nombre as 'Nombre Carga',
+                        c.fecha_nacimiento as 'Fecha Nacimiento',
+                        c.edad as 'Edad'
+                    FROM cargas c
+                    JOIN registros_trabajador r ON c.registro_id = r.id
+                    WHERE r.id IN ({placeholders}) AND c.activo = 1 AND r.activo = 1
+                    ORDER BY r.nombre_trabajador, c.tipo
+                """, conn, params=ids_pendientes)
+                
+                # Formatear fechas
+                if 'Fecha Registro' in df_registros.columns:
+                    df_registros['Fecha Registro'] = pd.to_datetime(df_registros['Fecha Registro']).dt.strftime('%d-%m-%y')
+                
+                if 'Fecha Nacimiento' in df_cargas.columns:
+                    df_cargas['Fecha Nacimiento'] = pd.to_datetime(df_cargas['Fecha Nacimiento']).dt.strftime('%d-%m-%y')
+                
+                # Escribir Excel
+                with pd.ExcelWriter(archivo_salida, engine='openpyxl') as writer:
+                    df_registros.to_excel(writer, sheet_name='Trabajadores', index=False)
+                    df_cargas.to_excel(writer, sheet_name='Cargas Familiares', index=False)
+                
+                # Marcar como enviados
+                cursor = conn.cursor()
+                for reg_id in ids_pendientes:
+                    cursor.execute("""
+                        UPDATE registros_trabajador 
+                        SET enviado_aseguradora = 1, 
+                            fecha_envio_aseguradora = CURRENT_TIMESTAMP,
+                            numero_lote = ?
+                        WHERE id = ?
+                    """, (numero_lote, reg_id))
+                
+                conn.commit()
+            
+            logger.info(f"Exportados {len(pendientes)} registros en lote {numero_lote}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error al exportar y marcar enviado: {e}")
+            return False
