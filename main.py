@@ -291,57 +291,58 @@ def reset_formulario():
 ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'admin2024')
 
 def sidebar_menu():
-    """Menú de la barra lateral."""
-    st.sidebar.header("🏢 Seguro Complementario")
+    """Menú de la barra lateral simplificado."""
+    
+    # Header limpio
+    st.sidebar.markdown("""
+    <div style="text-align: center; padding: 1rem 0;">
+        <h2 style="margin: 0; color: #667eea;">🏢 Seguro</h2>
+        <p style="margin: 0; color: #888; font-size: 0.9rem;">Complementario</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.sidebar.markdown("---")
     
     # Verificar si el admin está autenticado
     if 'admin_autenticado' not in st.session_state:
         st.session_state.admin_autenticado = False
     
-    # Mostrar vista según estado
-    if st.session_state.admin_autenticado:
-        st.sidebar.success("🔐 Modo Administrador")
-        
-        if st.sidebar.button("🚪 Cerrar Sesión Admin"):
-            st.session_state.admin_autenticado = False
-            st.session_state.modo_admin = False
-            st.rerun()
-        
-        st.session_state.modo_admin = True
-        
-        st.sidebar.markdown("---")
-        
-        # Estadísticas para admin
-        st.sidebar.header("📊 Estadísticas")
-        stats = db.obtener_estadisticas()
-        
-        col1, col2 = st.sidebar.columns(2)
-        col1.metric("Empleados", stats.get('total_empleados', 0))
-        col2.metric("Registros", stats.get('total_registros', 0))
-        
-        st.sidebar.metric("Total Cargas", stats.get('total_cargas', 0))
-        st.sidebar.metric("Emails Enviados", stats.get('emails_enviados', 0))
-        
-        if stats.get('cargas_por_tipo'):
-            st.sidebar.subheader("Por Tipo")
-            for tipo, cantidad in stats['cargas_por_tipo'].items():
-                st.sidebar.write(f"**{tipo}:** {cantidad}")
-    else:
-        st.session_state.modo_admin = False
-        
-        st.sidebar.markdown("---")
-        st.sidebar.caption("👤 Modo Trabajador")
-        
-        # Botón para acceder como admin
-        with st.sidebar.expander("🔐 Acceso Administrador"):
-            password = st.text_input("Contraseña:", type="password", key="admin_pwd")
-            if st.button("Ingresar"):
+    # Selector de modo
+    modo = st.sidebar.radio(
+        "Seleccione modo:",
+        ["👤 Trabajador", "🔐 Administrador"],
+        index=1 if st.session_state.admin_autenticado else 0,
+        key="modo_selector"
+    )
+    
+    if modo == "🔐 Administrador":
+        if not st.session_state.admin_autenticado:
+            # Mostrar login
+            st.sidebar.markdown("#### Ingrese contraseña:")
+            password = st.sidebar.text_input("Contraseña:", type="password", key="admin_pwd", label_visibility="collapsed")
+            if st.sidebar.button("🔓 Ingresar", use_container_width=True):
                 if password == ADMIN_PASSWORD:
                     st.session_state.admin_autenticado = True
                     st.session_state.modo_admin = True
                     st.rerun()
                 else:
-                    st.error("❌ Contraseña incorrecta")
+                    st.sidebar.error("❌ Contraseña incorrecta")
+        else:
+            # Admin autenticado
+            st.sidebar.success("✅ Sesión activa")
+            st.session_state.modo_admin = True
+            
+            if st.sidebar.button("🚪 Cerrar Sesión", use_container_width=True):
+                st.session_state.admin_autenticado = False
+                st.session_state.modo_admin = False
+                st.rerun()
+    else:
+        # Modo trabajador
+        st.session_state.modo_admin = False
+        st.sidebar.info("💼 Portal de trabajadores")
+    
+    st.sidebar.markdown("---")
+    st.sidebar.caption("© 2024 - Sistema de Gestión")
 
 
 # ==================== VISTA TRABAJADOR ====================
